@@ -62,6 +62,7 @@
             <th>Estado</th>
             <th>Observación</th>
           </tr>
+        </thead>
         <tbody id="tablaInventario">
           <!-- Se llena con JavaScript -->
         </tbody>
@@ -105,7 +106,6 @@
     inventario.forEach((item, index) => {
       totalAcumulado += Number(item.stock);
       
-      // Llenar tabla
       let estadoHTML = item.stock > 0 ? '<span class="badge-ok">Disponible</span>' : '<span class="badge-no">Agotado</span>';
       tabla.innerHTML += `
         <tr>
@@ -116,7 +116,6 @@
         </tr>
       `;
 
-      // Llenar selector desplegable
       select.innerHTML += `<option value="${item.codigo}">${item.codigo} (Stock: ${item.stock})</option>`;
     });
 
@@ -146,7 +145,6 @@
       return;
     }
 
-    // Buscar si el producto ya existe en el inventario
     let producto = inventario.find(item => item.codigo.toLowerCase() === codigo.toLowerCase());
 
     if (tipo === 'Entrada') {
@@ -154,7 +152,6 @@
         producto.stock += cantidad;
         if(obs) producto.obs = obs;
       } else {
-        // Si es un código completamente nuevo, lo crea
         inventario.push({ codigo: codigo, stock: cantidad, obs: obs || 'Nuevo ingreso' });
       }
     } else if (tipo === 'Salida') {
@@ -171,7 +168,6 @@
       }
     }
 
-    // Limpiar campos
     document.getElementById('codigoManual').value = '';
     document.getElementById('codigoSelect').value = '';
     document.getElementById('cantidad').value = '';
@@ -181,7 +177,6 @@
     alert('¡Movimiento registrado con éxito!');
   }
 
-  // Cargar al iniciar
   actualizarPantalla();
 </script>
 
