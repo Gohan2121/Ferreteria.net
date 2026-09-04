@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inventario - Láminas de Tumbado PVC</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 15px; background: #f4f6f8; color: #333; }
+    .container { max-width: 700px; margin: auto; }
+    .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    h2 { margin-top: 0; color: #1e293b; font-size: 22px; }
+    label { display: block; margin-top: 10px; font-weight: bold; font-size: 14px; }
+    input, select, button { width: 100%; padding: 10px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; }
+    button { background: #0f172a; color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 15px; }
+    button:hover { background: #334155; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; }
+    th, td { border: 1px solid #e2e8f0; padding: 10px; text-align: left; font-size: 14px; }
+    th { background: #1e293b; color: white; }
+    .badge-ok { color: #16a34a; font-weight: bold; }
+    .badge-no { color: #dc2626; font-weight: bold; }
+    .total-box { font-size: 16px; font-weight: bold; margin-top: 10px; text-align: right; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  
+  <!-- Formulario de Registro / Movimiento -->
+  <div class="card">
+    <h2>Control de Inventario - PVC</h2>
+    
+    <label for="codigoSelect">Seleccionar o Escribir SKU:</label>
+    <select id="codigoSelect" onchange="completarSKU()">
+      <option value="">-- Elige una lámina del inventario --</option>
+    </select>
+    <input type="text" id="codigoManual" placeholder="O escribe un código nuevo..." style="margin-top: 8px;">
+
+    <label for="tipoMovimiento">Tipo de Movimiento:</label>
+    <select id="tipoMovimiento">
+      <option value="Entrada">Entrada (Nueva Compra / Stock)</option>
+      <option value="Salida">Salida (Venta / Despacho)</option>
+    </select>
+    
+    <label for="cantidad">Cantidad:</label>
+    <input type="number" id="cantidad" placeholder="Ej. 10">
+
+    <label for="observacion">Observaciones / Notas:</label>
+    <input type="text" id="observacion" placeholder="Ej. Venta factura #123 o Revisado">
+
+    <button onclick="registrarMovimiento()">Registrar Movimiento</button>
+  </div>
+
+  <!-- Tabla de Inventario Actual -->
+  <div class="card">
+    <h2>Stock Actual de Láminas</h2>
+    <div style="overflow-x: auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Código SKU</th>
+            <th>Stock Actual</th>
+            <th>Estado</th>
+            <th>Observación</th>
+          </tr>
+        <tbody id="tablaInventario">
+          <!-- Se llena con JavaScript -->
+        </tbody>
+      </table>
+    </div>
+    <div class="total-box" id="totalGeneral">Total de láminas: 0</div>
+  </div>
+
+</div>
+
+<script>
+  // Datos iniciales extraídos de tu registro físico
+  let inventario = JSON.parse(localStorage.getItem('pvc_inventario')) || [
+    { codigo: "A: 251", stock: 122, obs: "" },
+    { codigo: "EG: 304", stock: 54, obs: "" },
+    { codigo: "302", stock: 6, obs: "" },
+    { codigo: "054", stock: 54, obs: "" },
+    { codigo: "D 0247", stock: 24, obs: "Visto bueno" },
+    { codigo: "A2502", stock: 18, obs: "" },
+    { codigo: "252", stock: 103, obs: "" },
+    { codigo: "B 2524", stock: 87, obs: "" },
+    { codigo: "D: 3057", stock: 81, obs: "Visto bueno" },
+    { codigo: "A-001-8", stock: 94, obs: "Visto bueno" },
+    { codigo: "A-250", stock: 44, obs: "Visto bueno" },
+    { codigo: "2531", stock: 103, obs: "" },
+    { codigo: "2598", stock: 161, obs: "Visto bueno" },
+    { codigo: "2522", stock: 0, obs: "NO HAY" },
+    { codigo: "052", stock: 50, obs: "" },
+    { codigo: "039", stock: 100, obs: "" }
+  ];
+
+  function actualizarPantalla() {
+    const tabla = document.getElementById('tablaInventario');
+    const select = document.getElementById('codigoSelect');
+    
+    tabla.innerHTML = '';
+    select.innerHTML = '<option value="">-- Elige una lámina del inventario --</option>';
+    
+    let totalAcumulado = 0;
+
+    inventario.forEach((item, index) => {
+      totalAcumulado += Number(item.stock);
+      
+      // Llenar tabla
+      let estadoHTML = item.stock > 0 ? '<span class="badge-ok">Disponible</span>' : '<span class="badge-no">Agotado</span>';
+      tabla.innerHTML += `
+        <tr>
+          <td><b>${item.codigo}</b></td>
+          <td>${item.stock}</td>
+          <td>${estadoHTML}</td>
+          <td>${item.obs || '-'}</td>
+        </tr>
+      `;
+
+      // Llenar selector desplegable
+      select.innerHTML += `<option value="${item.codigo}">${item.codigo} (Stock: ${item.stock})</option>`;
+    });
+
+    document.getElementById('totalGeneral').innerText = `Total general en bodega: ${totalAcumulado} láminas`;
+    localStorage.setItem('pvc_inventario', JSON.stringify(inventario));
+  }
+
+  function completarSKU() {
+    const seleccionado = document.getElementById('codigoSelect').value;
+    if (seleccionado) {
+      document.getElementById('codigoManual').value = seleccionado;
+    }
+  }
+
+  function registrarMovimiento() {
+    let codigo = document.getElementById('codigoManual').value.trim();
+    let tipo = document.getElementById('tipoMovimiento').value;
+    let cantidad = parseInt(document.getElementById('cantidad').value);
+    let obs = document.getElementById('observacion').value.trim();
+
+    if (!codigo) {
+      alert('Por favor selecciona o escribe un código SKU.');
+      return;
+    }
+    if (isNaN(cantidad) || cantidad <= 0) {
+      alert('Ingresa una cantidad válida mayor a 0.');
+      return;
+    }
+
+    // Buscar si el producto ya existe en el inventario
+    let producto = inventario.find(item => item.codigo.toLowerCase() === codigo.toLowerCase());
+
+    if (tipo === 'Entrada') {
+      if (producto) {
+        producto.stock += cantidad;
+        if(obs) producto.obs = obs;
+      } else {
+        // Si es un código completamente nuevo, lo crea
+        inventario.push({ codigo: codigo, stock: cantidad, obs: obs || 'Nuevo ingreso' });
+      }
+    } else if (tipo === 'Salida') {
+      if (producto) {
+        if (producto.stock < cantidad) {
+          alert(`Stock insuficiente. Solo quedan ${producto.stock} unidades.`);
+          return;
+        }
+        producto.stock -= cantidad;
+        if(obs) producto.obs = obs;
+      } else {
+        alert('Este código no existe en el inventario actual para registrar una salida.');
+        return;
+      }
+    }
+
+    // Limpiar campos
+    document.getElementById('codigoManual').value = '';
+    document.getElementById('codigoSelect').value = '';
+    document.getElementById('cantidad').value = '';
+    document.getElementById('observacion').value = '';
+
+    actualizarPantalla();
+    alert('¡Movimiento registrado con éxito!');
+  }
+
+  // Cargar al iniciar
+  actualizarPantalla();
+</script>
+
+</body>
+</html>
